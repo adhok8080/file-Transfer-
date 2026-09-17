@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZapShare — Send files, peer to peer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#171522; --ink-soft:#5c5870; --bg:#FFF7F4; --card:#ffffff;
+    --coral:#FF5A5F; --coral-dark:#E0454A; --coral-tint:#FFE9E7; --violet:#6C5CE7;
+    --line:#F0E4E1; --good:#1FAE6B; --shadow: 0 10px 30px rgba(23,21,34,0.07);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#F3F1FA; --ink-soft:#B6B1C9; --bg:#15121C; --card:#1E1A29;
+      --coral:#FF6B70; --coral-dark:#FF8589; --coral-tint:#2A1A1E; --line:#2C2738;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#F3F1FA; --ink-soft:#B6B1C9; --bg:#15121C; --card:#1E1A29;
+    --coral:#FF6B70; --coral-dark:#FF8589; --coral-tint:#2A1A1E; --line:#2C2738;
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,.brand{font-family:'Sora',sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+  header{border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:20;}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:72px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;}
+  .brand .bolt{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--coral),var(--violet));display:flex;align-items:center;justify-content:center;}
+  .brand .bolt svg{width:18px;height:18px;}
+  .theme-toggle{border:1px solid var(--line);background:transparent;color:var(--ink-soft);width:38px;height:38px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:12px;font-weight:600;font-size:14.5px;border:none;cursor:pointer;transition:transform .12s,opacity .12s;}
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--coral);color:#fff;box-shadow:0 6px 16px rgba(255,90,95,0.35);}
+  .btn-primary:hover{background:var(--coral-dark);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-block{width:100%;}
+  .hero{padding:50px 0 60px;}
+  .hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start;}
+  @media (max-width:900px){.hero-grid{grid-template-columns:1fr;}}
+  h1{font-size:38px;line-height:1.15;font-weight:800;letter-spacing:-0.02em;margin:0 0 14px;}
+  .lede{font-size:16px;line-height:1.6;color:var(--ink-soft);max-width:46ch;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);overflow:hidden;}
+  .tabs{display:flex;border-bottom:1px solid var(--line);}
+  .tab{flex:1;padding:16px;text-align:center;font-weight:700;font-size:15px;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;}
+  .tab.active{color:var(--coral-dark);border-bottom-color:var(--coral);}
+  .tabpanel{display:none;padding:26px;}
+  .tabpanel.active{display:block;}
+  .dropzone{border:2px dashed var(--line);border-radius:16px;padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
+  .dropzone:hover,.dropzone.drag{border-color:var(--coral);background:var(--coral-tint);}
+  .dropzone .plus{width:52px;height:52px;border-radius:50%;background:var(--coral-tint);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
+  .dropzone .plus svg{width:22px;height:22px;stroke:var(--coral-dark);}
+  input[type=file]{display:none;}
+  .filerow{display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:14px;}
+  .filerow .fic{width:36px;height:36px;border-radius:9px;background:var(--coral-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .filerow .fic svg{width:16px;height:16px;stroke:var(--coral-dark);}
+  .filerow .meta{flex:1;min-width:0;}
+  .filerow .name{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .filerow .size{font-size:12px;color:var(--ink-soft);}
+  .filerow .rm{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:18px;padding:4px;}
+  .codebox{
+    text-align:center;padding:22px 10px;background:var(--coral-tint);border-radius:16px;margin-top:16px;
+  }
+  .codebox .label{font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .codebox .code{font-family:'Sora',sans-serif;font-weight:800;font-size:40px;letter-spacing:0.06em;color:var(--coral-dark);}
+  .codeinput{
+    width:100%;text-align:center;font-family:'Sora',sans-serif;font-weight:800;font-size:28px;letter-spacing:0.15em;
+    padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  }
+  .codeinput:focus{outline:2px solid var(--coral);outline-offset:1px;}
+  .status{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-soft);margin-top:14px;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);}
+  .status .pulse{width:8px;height:8px;border-radius:50%;background:var(--ink-soft);flex-shrink:0;}
+  .status.live .pulse{background:var(--good);box-shadow:0 0 0 0 rgba(31,174,107,.5);animation:pulse 1.4s infinite;}
+  .status.live{color:var(--good);}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(31,174,107,.45);}70%{box-shadow:0 0 0 8px rgba(31,174,107,0);}100%{box-shadow:0 0 0 0 rgba(31,174,107,0);}}
+  .progress-track{height:8px;border-radius:100px;background:var(--line);margin-top:14px;overflow:hidden;}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--coral),var(--violet));border-radius:100px;transition:width .15s;}
+  .progress-num{font-size:12.5px;color:var(--ink-soft);margin-top:6px;text-align:right;}
+  .copybtn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:13px;font-weight:600;cursor:pointer;color:var(--ink);margin-top:12px;width:100%;}
+  .copybtn:hover{border-color:var(--coral);color:var(--coral-dark);}
+  .helper{font-size:12px;color:var(--ink-soft);margin-top:10px;line-height:1.5;text-align:center;}
+  .download-ready{text-align:center;padding:22px 10px;}
+  .download-ready .fic-lg{width:56px;height:56px;border-radius:14px;background:var(--coral-tint);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+  .download-ready .fic-lg svg{width:24px;height:24px;stroke:var(--coral-dark);}
+  .adslot{border:1px dashed var(--line);border-radius:14px;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px;}
+  .adslot::before{content:"Advertisement";}
+  .ad-leaderboard{height:90px;margin:30px 0;}
+  footer{margin-top:50px;border-top:1px solid var(--line);padding:30px 0;color:var(--ink-soft);font-size:13px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <span class="bolt"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      ZapShare
+    </div>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="wrap"><div class="ad-leaderboard adslot"></div></div>
+
+<main class="wrap">
+  <section class="hero">
+    <div class="hero-grid">
+      <div>
+        <h1>Send a file with an 8-digit code.</h1>
+        <p class="lede">Pick a file, get a code, tell the other person the code. Your file goes straight to their browser over WebRTC — our server only helps the two sides shake hands.</p>
+      </div>
+
+      <div class="panel">
+        <div class="tabs">
+          <button class="tab active" data-tab="send" type="button">Send</button>
+          <button class="tab" data-tab="receive" type="button">Receive</button>
+        </div>
+
+        <!-- SEND -->
+        <div class="tabpanel active" id="tab-send">
+          <div id="sendDropzone" class="dropzone">
+            <div class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+            <b style="display:block;font-size:15px;margin-bottom:4px;">Click or drag a file here</b>
+            <span style="font-size:13px;color:var(--ink-soft);">Any file type</span>
+          </div>
+          <input type="file" id="fileInput">
+          <div id="fileRow" style="display:none"></div>
+
+          <button class="btn btn-primary btn-block" id="createBtn" style="display:none;margin-top:14px;">Get a code</button>
+
+          <div id="sendCodeBox" style="display:none">
+            <div class="codebox">
+              <div class="label">Share this code</div>
+              <div class="code" id="theCode">--------</div>
+            </div>
+            <button class="copybtn" id="copyCodeBtn">Copy code</button>
+          </div>
+
+          <div id="sendStatus"></div>
+          <div id="sendProgressWrap" style="display:none">
+            <div class="progress-track"><div class="progress-fill" id="sendProgressFill"></div></div>
+            <div class="progress-num" id="sendProgressNum">0%</div>
+          </div>
+        </div>
+
+        <!-- RECEIVE -->
+        <div class="tabpanel" id="tab-receive">
+          <input class="codeinput" id="codeInput" maxlength="8" inputmode="numeric" pattern="[0-9]*" placeholder="00000000">
+          <button class="btn btn-primary btn-block" id="joinBtn" style="margin-top:14px;">Connect</button>
+
+          <div id="receiveStatus"></div>
+          <div id="receiveProgressWrap" style="display:none">
+            <div class="progress-track"><div class="progress-fill" id="receiveProgressFill"></div></div>
+            <div class="progress-num" id="receiveProgressNum">0%</div>
+          </div>
+          <div id="downloadReady" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>© 2026 ZapShare. Files transfer directly between browsers — only the connection handshake touches our server.</footer>
+</main>
+
+<script>
+(function(){
+  const root = document.documentElement;
+  document.getElementById('themeToggle').addEventListener('click', ()=>{
+    root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  function fmtSize(b){
+    if(b<1024) return b+' B';
+    if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
+    if(b<1024*1024*1024) return (b/(1024*1024)).toFixed(1)+' MB';
+    return (b/(1024*1024*1024)).toFixed(2)+' GB';
+  }
+  function fileIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>';}
+  function setStatus(el, text, live){
+    el.className = 'status' + (live ? ' live' : '');
+    el.innerHTML = '<span class="pulse"></span><span>'+text+'</span>';
+  }
+  async function copyToClipboard(text, btn){
+    try{ await navigator.clipboard.writeText(text); }
+    catch(e){
+      const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    const orig = btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=orig,1500);
+  }
+
+  const CHUNK_SIZE = 16*1024;
+  const rtcConfig = { iceServers:[{ urls:'stun:stun.l.google.com:19302' }] };
+  const wsProtocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+  const ws = new WebSocket(wsProtocol + location.host);
+
+  let pendingHandlers = { created:null, offer:null, answer:null, candidate:null, error:null, peerLeft:null };
+  ws.addEventListener('message', (evt)=>{
+    const msg = JSON.parse(evt.data);
+    if(msg.type==='created' && pendingHandlers.created) pendingHandlers.created(msg);
+    if(msg.type==='offer' && pendingHandlers.offer) pendingHandlers.offer(msg);
+    if(msg.type==='answer' && pendingHandlers.answer) pendingHandlers.answer(msg);
+    if(msg.type==='candidate' && pendingHandlers.candidate) pendingHandlers.candidate(msg);
+    if(msg.type==='error' && pendingHandlers.error) pendingHandlers.error(msg);
+    if(msg.type==='peer-left' && pendingHandlers.peerLeft) pendingHandlers.peerLeft(msg);
+  });
+  function wsSend(obj){ ws.send(JSON.stringify(obj)); }
+
+  // ===================== SEND =====================
+  let sendFile=null, sendPc=null, sendChannel=null, sendCode=null;
+
+  const sendDropzone=document.getElementById('sendDropzone');
+  const fileInput=document.getElementById('fileInput');
+  const fileRow=document.getElementById('fileRow');
+  const createBtn=document.getElementById('createBtn');
+  const sendCodeBox=document.getElementById('sendCodeBox');
+  const theCode=document.getElementById('theCode');
+  const sendStatusEl=document.getElementById('sendStatus');
+  const sendProgressWrap=document.getElementById('sendProgressWrap');
+  const sendProgressFill=document.getElementById('sendProgressFill');
+  const sendProgressNum=document.getElementById('sendProgressNum');
+
+  sendDropzone.addEventListener('click', ()=>fileInput.click());
+  ['dragover','dragenter'].forEach(evt=>sendDropzone.addEventListener(evt,e=>{e.preventDefault();sendDropzone.classList.add('drag');}));
+  ['dragleave','drop'].forEach(evt=>sendDropzone.addEventListener(evt,e=>{e.preventDefault();sendDropzone.classList.remove('drag');}));
+  sendDropzone.addEventListener('drop', e=>{ if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+  fileInput.addEventListener('change', e=>{ if(e.target.files.length) handleFile(e.target.files[0]); });
+
+  function handleFile(file){
+    sendFile = file;
+    fileRow.style.display='block';
+    fileRow.innerHTML = `<div class="filerow"><div class="fic">${fileIcon()}</div>
+      <div class="meta"><div class="name">${file.name}</div><div class="size">${fmtSize(file.size)}</div></div>
+      <button class="rm" id="rmBtn">&times;</button></div>`;
+    document.getElementById('rmBtn').addEventListener('click', ()=>{
+      sendFile=null; fileRow.style.display='none'; fileRow.innerHTML=''; createBtn.style.display='none'; fileInput.value='';
+    });
+    createBtn.style.display='block';
+  }
+
+  createBtn.addEventListener('click', ()=>{
+    if(!sendFile) return;
+    createBtn.disabled=true; createBtn.textContent='Getting a code…';
+
+    pendingHandlers.created = async (msg)=>{
+      sendCode = msg.code;
+      theCode.textContent = sendCode;
+      sendCodeBox.style.display='block';
+      setStatus(sendStatusEl, 'Waiting for the receiver to enter this code…');
+
+      sendPc = new RTCPeerConnection(rtcConfig);
+      sendChannel = sendPc.createDataChannel('file');
+      sendChannel.binaryType='arraybuffer';
+      setupSendChannel();
+
+      sendPc.addEventListener('icecandidate', e=>{
+        if(e.candidate) wsSend({ type:'candidate', code: sendCode, candidate: e.candidate });
+      });
+
+      const offer = await sendPc.createOffer();
+      await sendPc.setLocalDescription(offer);
+      wsSend({ type:'offer', code: sendCode, sdp: sendPc.localDescription, meta:{ name: sendFile.name, size: sendFile.size } });
+    };
+
+    pendingHandlers.answer = async (msg)=>{
+      await sendPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      setStatus(sendStatusEl, 'Connecting…', true);
+    };
+    pendingHandlers.candidate = async (msg)=>{
+      try{ await sendPc.addIceCandidate(msg.candidate); }catch(e){}
+    };
+    pendingHandlers.peerLeft = ()=> setStatus(sendStatusEl, 'The receiver disconnected.');
+
+    wsSend({ type:'create' });
+  });
+
+  document.getElementById('copyCodeBtn').addEventListener('click', (e)=>copyToClipboard(sendCode, e.target));
+
+  function setupSendChannel(){
+    sendChannel.addEventListener('open', ()=>{
+      setStatus(sendStatusEl, 'Connected — sending "'+sendFile.name+'"…', true);
+      sendFileOverChannel();
+    });
+    sendChannel.addEventListener('close', ()=> setStatus(sendStatusEl, 'Connection closed.'));
+  }
+
+  async function sendFileOverChannel(){
+    sendProgressWrap.style.display='block';
+    const buf = await sendFile.arrayBuffer();
+    const total = buf.byteLength;
+    let offset=0;
+    function sendNextChunk(){
+      while(offset<total){
+        if(sendChannel.bufferedAmount > CHUNK_SIZE*8){
+          sendChannel.addEventListener('bufferedamountlow', sendNextChunk, {once:true});
+          return;
+        }
+        const chunk = buf.slice(offset, offset+CHUNK_SIZE);
+        sendChannel.send(chunk);
+        offset += chunk.byteLength;
+        const pct = Math.min(100, Math.round((offset/total)*100));
+        sendProgressFill.style.width = pct+'%'; sendProgressNum.textContent = pct+'%';
+      }
+      sendChannel.send(JSON.stringify({done:true}));
+      setStatus(sendStatusEl, 'Transfer complete — "'+sendFile.name+'" delivered.');
+      wsSend({ type:'done', code: sendCode });
+    }
+    sendChannel.bufferedAmountLowThreshold = CHUNK_SIZE*4;
+    sendNextChunk();
+  }
+
+  // ===================== RECEIVE =====================
+  let recvPc=null, recvChannel=null, incomingMeta=null, receivedChunks=[], receivedBytes=0, joinCode=null;
+
+  const codeInput=document.getElementById('codeInput');
+  const joinBtn=document.getElementById('joinBtn');
+  const receiveStatusEl=document.getElementById('receiveStatus');
+  const receiveProgressWrap=document.getElementById('receiveProgressWrap');
+  const receiveProgressFill=document.getElementById('receiveProgressFill');
+  const receiveProgressNum=document.getElementById('receiveProgressNum');
+  const downloadReady=document.getElementById('downloadReady');
+
+  codeInput.addEventListener('input', ()=>{ codeInput.value = codeInput.value.replace(/[^0-9]/g,'').slice(0,8); });
+
+  joinBtn.addEventListener('click', ()=>{
+    const code = codeInput.value.trim();
+    if(code.length !== 8) { setStatus(receiveStatusEl, 'Enter the full 8-digit code.'); return; }
+    joinCode = code;
+    joinBtn.disabled = true; joinBtn.textContent = 'Connecting…';
+    setStatus(receiveStatusEl, 'Looking up that code…', true);
+
+    pendingHandlers.offer = async (msg)=>{
+      incomingMeta = msg.meta;
+      recvPc = new RTCPeerConnection(rtcConfig);
+      recvPc.addEventListener('datachannel', (evt)=>{
+        recvChannel = evt.channel;
+        recvChannel.binaryType='arraybuffer';
+        setupReceiveChannel();
+      });
+      recvPc.addEventListener('icecandidate', e=>{
+        if(e.candidate) wsSend({ type:'candidate', code: joinCode, candidate: e.candidate });
+      });
+
+      await recvPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      const answer = await recvPc.createAnswer();
+      await recvPc.setLocalDescription(answer);
+      wsSend({ type:'answer', code: joinCode, sdp: recvPc.localDescription });
+      setStatus(receiveStatusEl, 'Connecting to sender… ("'+incomingMeta.name+'", '+fmtSize(incomingMeta.size)+')', true);
+    };
+    pendingHandlers.candidate = async (msg)=>{
+      try{ await recvPc.addIceCandidate(msg.candidate); }catch(e){}
+    };
+    pendingHandlers.error = (msg)=>{
+      setStatus(receiveStatusEl, msg.message);
+      joinBtn.disabled=false; joinBtn.textContent='Connect';
+    };
+    pendingHandlers.peerLeft = ()=> setStatus(receiveStatusEl, 'The sender disconnected.');
+
+    wsSend({ type:'join', code });
+  });
+
+  function setupReceiveChannel(){
+    receivedChunks=[]; receivedBytes=0;
+    recvChannel.addEventListener('open', ()=>{
+      setStatus(receiveStatusEl, 'Connected — receiving "'+incomingMeta.name+'"…', true);
+      receiveProgressWrap.style.display='block';
+    });
+    recvChannel.addEventListener('message', (evt)=>{
+      if(typeof evt.data === 'string'){
+        try{ const m=JSON.parse(evt.data); if(m.done) finishReceive(); }catch(e){}
+        return;
+      }
+      receivedChunks.push(evt.data);
+      receivedBytes += evt.data.byteLength;
+      const pct = Math.min(100, Math.round((receivedBytes/incomingMeta.size)*100));
+      receiveProgressFill.style.width = pct+'%'; receiveProgressNum.textContent = pct+'%';
+    });
+  }
+
+  function finishReceive(){
+    const blob = new Blob(receivedChunks);
+    const url = URL.createObjectURL(blob);
+    setStatus(receiveStatusEl, 'Transfer complete.');
+    downloadReady.style.display='block';
+    downloadReady.innerHTML = `<div class="download-ready"><div class="fic-lg">${fileIcon()}</div>
+      <b style="display:block;margin-bottom:4px;">${incomingMeta.name}</b>
+      <span style="color:var(--ink-soft);font-size:13px;">${fmtSize(incomingMeta.size)}</span>
+      <div style="margin-top:16px;"><a class="btn btn-primary" href="${url}" download="${incomingMeta.name}">Download file</a></div></div>`;
+  }
+})();
+</script>
+</body>
+</html>
